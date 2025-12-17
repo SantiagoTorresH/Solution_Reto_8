@@ -1,31 +1,42 @@
-import { useState } from 'react'
-
+// import { useState } from 'react'
 import './App.css'
 
+import { Routes, Route } from 'react-router-dom';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Notes from './pages/Notes';
+import ProtectedRoute from './routes/ProtectedRoute';
+
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
     <>
-    <div className="min-h-screen flex items-center justify-center bg-red-600">
-      <h1 className="text-4xl font-bold text-white">
-        Tailwind v3 funcionando bien✅
-      </h1>
+    <div className="min-h-screen bg-gray-900">
+
+      <Routes>
+
+        {/*public routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} /> 
+
+        {/*protected routes */}
+        <Route 
+          path="/notes" element={
+            // aqui usaremos el componente protected Rouete para verificar si el usuario esta logeado
+            <ProtectedRoute>
+              <Notes />
+            </ProtectedRoute>
+          } />
+          {/* ruta por defecto(can redirect to Login, if there is no token) */}
+          <Route path="/" element={<Notes />} /> 
+
+
+
+      </Routes>
     </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+
     </>
-  )
+  );
 }
 
 export default App
