@@ -1,0 +1,12 @@
+// inicializar el proyecto el proyecto de Node.js
+npm init -y
+
+// instalamos las dependencias esenciales 
+npm install express body-parser cors dotenv
+
+// se crea el archivo principal del servidor
+touch server.js
+
+// Instalamos dependencias de seguridad
+npm install bcryptjs jsonwebtoken
+
