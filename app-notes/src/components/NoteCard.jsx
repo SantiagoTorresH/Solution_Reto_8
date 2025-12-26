@@ -1,7 +1,7 @@
 // src/components/NoteCard.jsx
 import React from 'react';
 
-const NoteCard = ({ note, onDelete }) => {
+const NoteCard = ({ note, onDelete, onEdit }) => {
     // Función para asignar color según la categoría
     const getCategoryColor = (cat) => {
         switch (cat) {
@@ -21,7 +21,14 @@ const NoteCard = ({ note, onDelete }) => {
             </div>
             <p className="text-gray-600 mt-2 whitespace-pre-wrap">{note.contenido}</p>
             
-            <div className="mt-4 flex justify-end space-x-2">
+            <div className="mt-4 flex justify-end space-x-3">
+                {/* BOTÓN EDITAR */}
+                <button 
+                    onClick={() => onEdit(note)} 
+                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                >
+                    Editar
+                </button>
                 <button 
                     onClick={() => onDelete(note.id)}
                     className="text-red-600 hover:text-red-800 text-sm font-medium"

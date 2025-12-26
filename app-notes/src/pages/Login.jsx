@@ -42,8 +42,8 @@ const Login = () => {
 
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-xl">
+    <div className="flex justify-center items-center min-h-screen bg-blue-950 p-4">
+      <div className="w-full max-w-md bg-lime-500 p-8 rounded-lg shadow-xl">
         <h2 className="text-3xl font-bold text-center text-indigo-600 mb-6">Iniciar Sesión</h2>
         
         {/* Muestra el error si existe */}
@@ -55,7 +55,7 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-lg font-medium text-rose-700">
               Email
             </label>
             <input
@@ -69,7 +69,7 @@ const Login = () => {
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-lg font-medium text-rose-700">
               Contraseña
             </label>
             <input
@@ -84,13 +84,13 @@ const Login = () => {
           </div>
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Entrar
           </button>
         </form>
         
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-lg text-gray-800">
           ¿No tienes cuenta?{' '}
           <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
             Regístrate aquí
