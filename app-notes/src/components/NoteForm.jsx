@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosClient from '../api/axiosClient';
 
-const NoteForm = ({ onNoteCreated, editingNote, clearEditing }) => {
+const NoteForm = ({ onNoteCreated, editingNote, clearEditing, showNotification }) => {
     const [formData, setFormData] = useState({
         titulo: '',
         contenido: '',
@@ -34,11 +34,11 @@ const NoteForm = ({ onNoteCreated, editingNote, clearEditing }) => {
             if (editingNote) {
                 // MODO EDICIÓN: Usamos PUT y el ID de la nota
                 await axiosClient.put(`/auth/notes/${editingNote.id}`, formData);
-                alert("¡Nota actualizada con éxito!");
+                if (showNotification) showNotification("¡Nota actualizada con éxito!", "success");
             } else {
                 // MODO CREACIÓN: Usamos POST
                 await axiosClient.post('/auth/notes', formData);
-                alert("¡Nota creada con éxito!");
+                if (showNotification) showNotification("¡Nota creada con éxito!", "success");
             }
             
             // Limpiar el estado y avisar al padre para refrescar la lista
@@ -47,7 +47,9 @@ const NoteForm = ({ onNoteCreated, editingNote, clearEditing }) => {
             
         } catch (error) {
             console.error("Error al procesar la nota:", error?.message || error);
-            alert("Hubo un error al guardar la nota.");
+            if (showNotification) {
+                showNotification("Error al guardar la nota. Inténtalo de nuevo.", "error");
+            }
         } finally {
             setLoading(false);
         }
