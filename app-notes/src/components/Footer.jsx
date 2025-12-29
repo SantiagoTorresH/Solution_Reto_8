@@ -3,7 +3,7 @@ import React from 'react';
 
 const Footer = () => {
     return (
-        <footer className="bg-slate-950 border-t border-gray-200 py-6 mt-10">
+        <footer className="bg-slate-900 border-t border-gray-200 py-6 mt-10">
             <div className="max-w-6xl mx-auto px-4">
                 <div className="flex flex-col md:flex-row justify-between items-center">
                     {/* Sección de Logo o Nombre */}

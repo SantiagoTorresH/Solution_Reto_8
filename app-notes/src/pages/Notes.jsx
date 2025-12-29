@@ -5,6 +5,7 @@ import axiosClient from '../api/axiosClient';
 import NoteForm from '../components/NoteForm';
 import NoteCard from '../components/NoteCard';
 import FilterBar from '../components/FilterBar';
+import Header from '../components/Header';
 
 
 
@@ -15,6 +16,7 @@ const Notes = () => {
     const [filter, setFilter] = useState('Todas'); // Estado para el filtro
     const [editingNote, setEditingNote] = useState(null); // Estado para la nota en edición
     const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState(''); // NUEVO: Estado para el buscador
 
     // Estados para las notificaciones y el modal
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -48,16 +50,18 @@ const Notes = () => {
         }
     };
 
-    // 4. Función de Logout
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        navigate('/login');
-    };
+    // 5. Lógica de Filtrado combinada (categoría + búsqueda)
+    const filteredNotes = notes.filter(note => {
+        // Filtro por categoría
+        const matchesCategory = filter === 'Todas' || note.categoria === filter;
+        
+        // Filtro por búsqueda (Título o Contenido)
+        const matchesSearch = searchTerm === '' || 
+            note.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            note.contenido.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // 5. Lógica de Filtrado
-    const filteredNotes = filter === 'Todas'
-        ? notes
-        : notes.filter(n => n.categoria === filter);
+        return matchesCategory && matchesSearch; // Debe cumplir ambos
+    });
 
     // Función para mostrar la notificación y que se borre a los 3 segundos
     const showNotification = (message, type = 'success') => {
@@ -67,8 +71,12 @@ const Notes = () => {
         }, 3000);
     };
 
+
+
     return (
         <div className="max-w-6xl mx-auto p-4">
+            
+
             {/* TOAST NOTIFICATION */}
             {toast.show && (
                 <div 
@@ -90,17 +98,7 @@ const Notes = () => {
                     </button>
                 </div>
             )}
-
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
-                <h1 className="text-2xl font-bold text-indigo-700">Mis Notas Personales</h1>
-                <button
-                    onClick={handleLogout}
-                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition"
-                >
-                    Cerrar Sesión
-                </button>
-            </div>
+            <Header onSearch={setSearchTerm} />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Columna Izquierda: Formulario */}
@@ -136,7 +134,12 @@ const Notes = () => {
                         </div>
                     ) : (
                         <div className="text-center py-10 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                            <p className="text-gray-500">No hay notas en esta categoría.</p>
+                            <p className="text-gray-500">
+                                {searchTerm 
+                                    ? `No se encontraron notas que coincidan con "${searchTerm}"${filter !== 'Todas' ? ` en la categoría ${filter}` : ''}.`
+                                    : `No hay notas${filter !== 'Todas' ? ` en la categoría ${filter}` : ''}.`
+                                }
+                            </p>
                         </div>
                     )}
                 </div>

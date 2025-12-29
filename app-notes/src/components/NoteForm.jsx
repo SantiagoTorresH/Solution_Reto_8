@@ -64,7 +64,7 @@ const NoteForm = ({ onNoteCreated, editingNote, clearEditing, showNotification }
     return (
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md mb-8">
             {/* Título dinámico según la acción */}
-            <h3 className="text-xl font-bold mb-4 text-gray-800">
+            <h3 className="text-xl font-bold mb-4 text-zinc-700">
                 {editingNote ? '✏️ Editando Nota' : '🆕 Nueva Nota'}
             </h3>
             

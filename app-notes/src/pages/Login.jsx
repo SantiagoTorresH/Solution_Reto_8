@@ -27,9 +27,11 @@ const Login = () => {
       // 1. Envío de datos al endpoint de login del backend
       const response = await axiosClient.post('/auth/login', formData); 
       
-      // 2. El servidor debe retornar el token. Lo guardamos en localStorage [cite: 38]
-      const token = response.data.token;
-      localStorage.setItem('token', token); 
+      // 2. Guardar token y nombre del usuario en localStorage
+      localStorage.setItem('token', response.data.token);
+      if (response.data.user && response.data.user.name) {
+        localStorage.setItem('userName', response.data.user.name);
+      }
 
       // 3. Redirigir al usuario a la ruta protegida /notes
       navigate('/notes'); 
@@ -42,9 +44,9 @@ const Login = () => {
 
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-blue-950 p-4">
+    <div className="flex justify-center items-center min-h-screen bg-zinc-700 p-4">
       <div className="w-full max-w-md bg-lime-500 p-8 rounded-lg shadow-xl">
-        <h2 className="text-3xl font-bold text-center text-indigo-600 mb-6">Iniciar Sesión</h2>
+        <h2 className="text-3xl font-bold text-center text-slate-950 mb-6">Iniciar Sesión</h2>
         
         {/* Muestra el error si existe */}
         {error && (
@@ -84,7 +86,7 @@ const Login = () => {
           </div>
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Entrar
           </button>
@@ -92,7 +94,7 @@ const Login = () => {
         
         <p className="mt-6 text-center text-lg text-gray-800">
           ¿No tienes cuenta?{' '}
-          <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+          <Link to="/register" className="font-medium text-indigo-600 hover:text-rose-500">
             Regístrate aquí
           </Link>
         </p>

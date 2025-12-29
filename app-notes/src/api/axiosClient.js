@@ -41,9 +41,11 @@ axiosClient.interceptors.response.use(
     (error) => {
         // Ejemplo: Si el servidor devuelve un error 401 (No autorizado o Token expirado)
         if (error.response && error.response.status === 401) {
-            // Eliminar el token no válido y redirigir al login
+            // Eliminar token y nombre del usuario
             localStorage.removeItem('token');
-            // Nota: Aquí podrías usar window.location.href o un hook de router si estuviéramos en un componente
+            localStorage.removeItem('userName');
+            // Redirigir al login
+            window.location.href = '/login';
             console.error("Token expirado o inválido. Redirigiendo a login...");
         }
         return Promise.reject(error);
