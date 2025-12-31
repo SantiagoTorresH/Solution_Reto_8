@@ -1,12 +1,20 @@
 // inicializar el proyecto el proyecto de Node.js
+
 npm init -y
 
 // instalamos las dependencias esenciales 
+
 npm install express body-parser cors dotenv
 
 // se crea el archivo principal del servidor
+
 touch server.js
 
 // Instalamos dependencias de seguridad
+
 npm install bcryptjs jsonwebtoken
 
+//mongoose: Para conectarnos y manejar los datos.
+//dotenv: Para guardar la dirección de tu base de datos de forma segura
+
+npm install mongoose dotenv

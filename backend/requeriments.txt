@@ -1,0 +1,9 @@
+npm init -y
+
+npm install express body-parser cors dotenv
+
+touch server.js
+
+npm install bcryptjs jsonwebtoken
+
+npm install mongoose dotenv

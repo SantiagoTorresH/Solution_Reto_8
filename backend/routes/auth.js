@@ -3,151 +3,121 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Simulación de base de datos en memoria
-const users = []; 
-const notes = [];
-let noteIdCounter = 1;
-const JWT_SECRET = "mi_clave_secreta_super_segura"; // En producción va en .env
+// IMPORTAR LOS MODELOS
+const User = require('../models/User');
+const Note = require('../models/Note');
 
-// Middleware: Verificar Token JWT
+const JWT_SECRET = process.env.JWT_SECRET || "clave_por_defecto";
+
+// Middleware: Verificar Token JWT (Se mantiene igual, solo usa JWT_SECRET)
 const verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1]; // "Bearer <token>"
-    
-    if (!token) {
-        return res.status(401).json({ message: "Token no proporcionado" });
-    }
-
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ message: "Token no proporcionado" });
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
+        req.user = decoded; // Contiene el id del usuario
         next();
     } catch (error) {
-        return res.status(401).json({ message: "Token inválido o expirado" });
+        return res.status(401).json({ message: "Token inválido" });
     }
 };
 
-// 1. RUTA DE REGISTRO 
+// 1. REGISTRO (MongoDB)
 router.post('/register', async (req, res) => {
-    const { name, email, password } = req.body;
+    try {
+        const { name, email, password } = req.body;
+        
+        // Buscar en la DB si ya existe
+        const userExists = await User.findOne({ email });
+        if (userExists) return res.status(400).json({ message: "El usuario ya existe" });
 
-    // Validar si el usuario ya existe
-    const userExists = users.find(u => u.email === email);
-    if (userExists) {
-        return res.status(400).json({ message: "El usuario ya existe" });
-    }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Guardar en MongoDB
+        const newUser = new User({ name, email, password: hashedPassword });
+        await newUser.save();
 
-    // Encriptar contraseña
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Guardar usuario
-    const newUser = { id: users.length + 1, name, email, password: hashedPassword };
-    users.push(newUser);
-
-    res.status(201).json({ message: "Usuario registrado con éxito" });
+        res.status(201).json({ message: "Usuario registrado con éxito" });
+    } catch (e) { res.status(500).json({ message: "Error en el servidor" }); }
 });
 
-// 2. RUTA DE LOGIN [cite: 36]
+// 2. LOGIN (MongoDB)
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(400).json({ message: "Credenciales incorrectas" });
+        }
 
-    // Buscar usuario
-    const user = users.find(u => u.email === email);
-    if (!user) {
-        return res.status(400).json({ message: "Credenciales incorrectas" }); // [cite: 37]
-    }
-
-    // Comparar contraseña encriptada
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-        return res.status(400).json({ message: "Credenciales incorrectas" }); // [cite: 37]
-    }
-
-    // Crear el TOKEN JWT [cite: 8]
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
-
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+        // El token ahora usa el _id de MongoDB
+        const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    } catch (e) { res.status(500).json({ message: "Error en el servidor" }); }
 });
 
-// ===== RUTAS DE NOTAS =====
-
-// 1. OBTENER TODAS LAS NOTAS DEL USUARIO LOGUEADO
-router.get('/notes', verifyToken, (req, res) => {
-    const userNotes = notes.filter(n => n.userId === req.user.id);
-    res.json(userNotes);
+// 3. OBTENER NOTAS (MongoDB)
+router.get('/notes', verifyToken, async (req, res) => {
+    try {
+        // Buscamos todas las notas donde el campo 'usuario' coincida con el ID del token
+        const userNotes = await Note.find({ usuario: req.user.id });
+        res.json(userNotes);
+    } catch (e) { res.status(500).json({ message: "Error al obtener notas" }); }
 });
 
-// 2. CREAR UNA NUEVA NOTA
-router.post('/notes', verifyToken, (req, res) => {
-    const { titulo, contenido, categoria } = req.body;
-
-    if (!titulo || !contenido) {
-        return res.status(400).json({ message: "Título y contenido son obligatorios" });
-    }
-
-    const newNote = {
-        id: noteIdCounter++,
-        userId: req.user.id,
-        titulo,
-        contenido,
-        categoria: categoria || 'Personal',
-        fechaCreacion: new Date().toISOString(),
-        fechaEdicion: new Date().toISOString()
-    };
-
-    notes.push(newNote);
-    res.status(201).json(newNote);
+// 4. CREAR NOTA (MongoDB)
+router.post('/notes', verifyToken, async (req, res) => {
+    try {
+        const { titulo, contenido, categoria } = req.body;
+        const newNote = new Note({
+            usuario: req.user.id, // Relacionamos la nota con el usuario
+            titulo,
+            contenido,
+            categoria
+        });
+        await newNote.save();
+        res.status(201).json(newNote);
+    } catch (e) { res.status(500).json({ message: "Error al crear nota" }); }
 });
 
-// 3. EDITAR UNA NOTA EXISTENTE
-router.put('/notes/:id', verifyToken, (req, res) => {
-    const { id } = req.params;
-    const { titulo, contenido, categoria } = req.body;
+// 5. EDITAR NOTA (MongoDB)
+router.put('/notes/:id', verifyToken, async (req, res) => {
+    try {
+        const { titulo, contenido, categoria } = req.body;
+        
+        // Buscamos la nota por ID
+        const note = await Note.findById(req.params.id);
+        if (!note) return res.status(404).json({ message: "Nota no encontrada" });
 
-    // Buscamos el índice de la nota en el arreglo
-    const index = notes.findIndex(n => n.id === parseInt(id));
+        // Seguridad: ¿Es el dueño? (convertimos a String para comparar)
+        if (note.usuario.toString() !== req.user.id) {
+            return res.status(403).json({ message: "No autorizado" });
+        }
 
-    // Si no existe la nota
-    if (index === -1) {
-        return res.status(404).json({ message: "Nota no encontrada" });
-    }
-
-    // SEGURIDAD: Verificar que la nota pertenezca al usuario logueado
-    if (notes[index].userId !== req.user.id) {
-        return res.status(403).json({ message: "No tienes permiso para editar esta nota" });
-    }
-
-    // Actualizamos los datos
-    notes[index] = {
-        ...notes[index],
-        titulo: titulo || notes[index].titulo,
-        contenido: contenido || notes[index].contenido,
-        categoria: categoria || notes[index].categoria,
-        fechaEdicion: new Date().toISOString()
-    };
-
-    res.json(notes[index]);
+        // Actualizamos
+        note.titulo = titulo || note.titulo;
+        note.contenido = contenido || note.contenido;
+        note.categoria = categoria || note.categoria;
+        
+        await note.save();
+        res.json(note);
+    } catch (e) { res.status(500).json({ message: "Error al editar" }); }
 });
 
-// 4. ELIMINAR UNA NOTA
-router.delete('/notes/:id', verifyToken, (req, res) => {
-    const { id } = req.params;
+// 6. ELIMINAR NOTA (MongoDB)
+router.delete('/notes/:id', verifyToken, async (req, res) => {
+    try {
+        const note = await Note.findById(req.params.id);
+        if (!note) return res.status(404).json({ message: "Nota no encontrada" });
 
-    // Buscamos la nota para verificar la propiedad antes de borrar
-    const noteIndex = notes.findIndex(n => n.id === parseInt(id));
+        if (note.usuario.toString() !== req.user.id) {
+            return res.status(403).json({ message: "No autorizado" });
+        }
 
-    if (noteIndex === -1) {
-        return res.status(404).json({ message: "Nota no encontrada" });
-    }
-
-    // SEGURIDAD: Verificar que la nota pertenezca al usuario logueado
-    if (notes[noteIndex].userId !== req.user.id) {
-        return res.status(403).json({ message: "No tienes permiso para eliminar esta nota" });
-    }
-
-    // Eliminamos la nota del arreglo
-    notes.splice(noteIndex, 1);
-
-    res.json({ message: "Nota eliminada con éxito" });
+        await Note.findByIdAndDelete(req.params.id);
+        res.json({ message: "Nota eliminada con éxito" });
+    } catch (e) { res.status(500).json({ message: "Error al eliminar" }); }
 });
 
 module.exports = router;

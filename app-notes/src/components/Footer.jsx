@@ -20,7 +20,7 @@ const Footer = () => {
                             © {new Date().getFullYear()} Creado para dar solocion al reto del modulo 8. .
                         </p>
                         <p className="text-xs text-stone-500 mt-1">
-                            Hecho con React + Tailwind + Node.js
+                            Hecho con React + Tailwind + Vite + Node.js
                         </p>
                     </div>
                 </div>

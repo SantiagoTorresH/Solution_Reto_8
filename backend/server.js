@@ -1,55 +1,67 @@
 // mini-notes-api/server.js
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config(); // Cargar variables de entorno
+const mongoose = require('mongoose');
+require('dotenv').config(); // Cargamos variables de entorno una sola vez al principio
 
 const app = express();
 
+// --- 1. CONEXIÓN A LA BASE DE DATOS ---
+// Es mejor poner esto cerca del inicio para saber si la app tiene "corazón" (DB)
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('✅ Conectado a MongoDB local'))
+    .catch(err => console.error('❌ Error al conectar a MongoDB:', err));
 
-// Middlewares
+// --- 2. MIDDLEWARES ---
 
-// 1. Configuración de CORS: Permite la comunicación con el frontend
+// Configuración de CORS
 app.use(cors({
     origin: [
-        'http://localhost:5173', // puerto por defecto de Vite
-        'http://localhost:5174'  // si Vite eligió otro puerto (ej. 5174)
+        'http://localhost:5173', 
+        'http://localhost:5174'
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
 }));
 
-// 2. Procesar cuerpos de petición como JSON (usando express.json)
+// Procesar cuerpos JSON
 app.use(express.json());
 
-// 3. Log simple para depurar bodies
+// Log de peticiones (Muy útil para desarrollo)
 app.use((req, res, next) => {
-    console.log('[req]', req.method, req.path, 'body=', req.body);
+    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.path}`);
     next();
 });
 
-// 4. Usar las rutas de autenticación con el prefijo /api/auth (después de middlewares)
+// --- 3. RUTAS ---
+
+// Prefijo /api/auth para todas las rutas dentro de auth.js
 app.use('/api/auth', require('./routes/auth')); 
 
-// 3. Ruta de prueba
+// Ruta de bienvenida
 app.get('/', (req, res) => {
     res.send('API de Notas está funcionando');
 });
 
-    // 4. Nueva ruta de salud
-    app.get('/api/health', (req, res) => {
-        res.json({ status: 'ok', message: 'API is running' });
-    });
+// Ruta de salud
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'API is running' });
+});
 
-    // Manejador de errores para responder con JSON en lugar de stack traces HTML
-    app.use((err, req, res, next) => {
-        console.error('ERROR HANDLER:', err && err.stack ? err.stack : err);
-        res.status(500).json({ error: err && err.message ? err.message : 'Internal Server Error' });
+// --- 4. MANEJO DE ERRORES ---
+// (Siempre debe ir después de las rutas)
+app.use((err, req, res, next) => {
+    console.error('ERROR:', err.stack || err);
+    res.status(500).json({ 
+        error: 'Error interno del servidor',
+        message: err.message 
     });
+});
 
-// 4. Iniciar el servidor
-// Usamos el puerto 4000 o el que definamos en las variables de entorno
+// --- 5. INICIAR EL SERVIDOR ---
 const PORT = process.env.PORT || 4000; 
 
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor API escuchando en http://localhost:${PORT}`);
+    console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+    console.log(`📂 Base de datos configurada en: ${process.env.MONGO_URI}`);
 });
