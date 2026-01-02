@@ -17,7 +17,7 @@ const NoteCard = ({ note, onDelete, onEdit }) => {
         <div className={`p-4 border-l-8 rounded-lg shadow-sm ${getCategoryColor(note.categoria)}`}>
             <div className="flex justify-between items-start">
                 <h4 className="font-bold text-lg text-gray-800">{note.titulo}</h4>
-                <span className="text-xs text-gray-500">{new Date(note.fechaCreacion).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-500">{new Date(note.createdAt).toLocaleDateString()}</span>
             </div>
             <p className="text-gray-600 mt-2 whitespace-pre-wrap">{note.contenido}</p>
             
@@ -30,7 +30,7 @@ const NoteCard = ({ note, onDelete, onEdit }) => {
                     Editar
                 </button>
                 <button 
-                    onClick={() => onDelete(note.id)}
+                    onClick={() => onDelete(note._id)}
                     className="text-red-600 hover:text-red-800 text-sm font-medium"
                 >
                     Eliminar

@@ -1,6 +1,5 @@
 // src/pages/Notes.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import NoteForm from '../components/NoteForm';
 import NoteCard from '../components/NoteCard';
@@ -15,7 +14,6 @@ const Notes = () => {
     const [notes, setNotes] = useState([]);
     const [filter, setFilter] = useState('Todas'); // Estado para el filtro
     const [editingNote, setEditingNote] = useState(null); // Estado para la nota en edición
-    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState(''); // NUEVO: Estado para el buscador
 
     // Estados para las notificaciones y el modal
@@ -34,10 +32,29 @@ const Notes = () => {
     };
 
     // 2. Cargar notas al iniciar
+    // useEffect(() => {
+    //     // fetchNotes();
+    // }, []);
+    
     useEffect(() => {
-        fetchNotes();
+        let mounted = true;
+        const load = async () => {
+            try {
+                const res = await axiosClient.get("/auth/notes");
+                if (mounted) setNotes(res.data);
+            } catch (err) {
+                console.error("Error al obtener notas:", err);
+            }
+        };
+        load();
+        return () => {
+            mounted = false;
+        };
     }, []);
 
+
+
+    
     // 3. Función para eliminar nota
     const handleDelete = async (id) => {
         try {
@@ -123,11 +140,11 @@ const Notes = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {filteredNotes.map(note => (
                                 <NoteCard
-                                    key={note.id}
+                                    key={note._id}
                                     note={note}
                                     // onDelete={handleDelete}
                                     // En el NoteCard dentro del map:
-                                    onDelete={() => setModal({ show: true, noteId: note.id })}
+                                    onDelete={() => setModal({ show: true, noteId: note._id })}
                                     onEdit={(n) => setEditingNote(n)} // Al hacer clic en editar, guardamos la nota aquí
                                 />
                             ))}
