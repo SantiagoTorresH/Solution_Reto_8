@@ -1,6 +1,7 @@
 // mini-notes-api/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = "mi_clave_secreta_super_segura"; // Debe ser la misma que en auth.js
+
+const JWT_SECRET = process.env.JWT_SECRET || "clave_por_defecto";
 
 const verifyToken = (req, res, next) => {
     // 1. Obtener el token del encabezado 'Authorization'
@@ -21,7 +22,7 @@ const verifyToken = (req, res, next) => {
         
         next(); // Continuar a la siguiente función (la ruta)
     } catch (error) {
-        res.status(403).json({ message: "Token no válido o expirado." });
+        res.status(401).json({ message: "Token no válido o expirado." });
     }
 };
 

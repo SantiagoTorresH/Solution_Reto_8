@@ -9,18 +9,8 @@ const Note = require('../models/Note');
 
 const JWT_SECRET = process.env.JWT_SECRET || "clave_por_defecto";
 
-// Middleware: Verificar Token JWT (Se mantiene igual, solo usa JWT_SECRET)
-const verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ message: "Token no proporcionado" });
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded; // Contiene el id del usuario
-        next();
-    } catch (error) {
-        return res.status(401).json({ message: "Token inválido" });
-    }
-};
+// Usar middleware centralizado para verificar JWT
+const verifyToken = require('../middleware/authMiddleware');
 
 // 1. REGISTRO (MongoDB)
 router.post('/register', async (req, res) => {

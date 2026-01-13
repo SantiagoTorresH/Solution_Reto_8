@@ -49,7 +49,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // --- 4. MANEJO DE ERRORES ---
-// (Siempre debe ir después de las rutas)
+// 
 app.use((err, req, res, next) => {
     console.error('ERROR:', err.stack || err);
     res.status(500).json({ 

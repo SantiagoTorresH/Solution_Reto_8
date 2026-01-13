@@ -66,11 +66,18 @@ Las rutas protegidas requieren el header `Authorization: Bearer <token>`.
 - `app-notes/` — Código del frontend (React + Vite)
 - `backend/` — API en Node/Express y modelos Mongoose
 
+
+
+**CAPTURAS DE LA UI** 
+
+
+
+
 **Próximos pasos sugeridos**
 - Añadir `README` específicos en `backend/` y `app-notes` con scripts y variables.
 - Opcional: configurar `docker-compose` para fácil despliegue local.
 
 **Autor**
-Proyecto implementado por el autor del reto.
+Santiago Torres Herrera 
 
 --
