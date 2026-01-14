@@ -69,15 +69,24 @@ Las rutas protegidas requieren el header `Authorization: Bearer <token>`.
 
 
 **CAPTURAS DE LA UI** 
+![](imgs/login.png)
+![](imgs/register.png)
+![](imgs/notes.png)
 
 
 
 
 **Próximos pasos sugeridos**
-- Añadir `README` específicos en `backend/` y `app-notes` con scripts y variables.
+
 - Opcional: configurar `docker-compose` para fácil despliegue local.
 
 **Autor**
 Santiago Torres Herrera 
 
 --
+
+
+### Vídeo complementario
+
+Dar clic a la imagen para ser redirigdo al vídeo en Youtube.
+[![](imgs/thumbnail.png)](https://youtu.be/20fCRJm-HXM)

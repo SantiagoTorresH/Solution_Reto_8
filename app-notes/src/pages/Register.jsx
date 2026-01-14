@@ -12,18 +12,82 @@ const Register = () => {
         password: "",
     });
     const [error, setError] = useState(null);
+    const [validations, setValidations] = useState({
+        emailValid: false,
+        passwordValid: false,
+    });
     const navigate = useNavigate();
 
+    // Validar formato de email
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
+    // Validar fortaleza de contraseña
+    // Requisitos: mínimo 8 caracteres, mayúscula, minúscula, número
+    const validatePassword = (password) => {
+        if (password.length < 8) return false;
+        if (!/[A-Z]/.test(password)) return false;
+        if (!/[a-z]/.test(password)) return false;
+        if (!/[0-9]/.test(password)) return false;
+        return true;
+    };
+
+    // Obtener mensaje de requisitos de contraseña
+    const getPasswordRequirements = (password) => {
+        const requirements = [];
+        if (password.length < 8) requirements.push("Mínimo 8 caracteres");
+        if (!/[A-Z]/.test(password)) requirements.push("Al menos una mayúscula");
+        if (!/[a-z]/.test(password)) requirements.push("Al menos una minúscula");
+        if (!/[0-9]/.test(password)) requirements.push("Al menos un número");
+        return requirements;
+    };
+
     const handleChange = (e) => {
+        const { name, value } = e.target;
         setFormData({
-            ...formData, // Mantén los otros campos (email, password)
-            [e.target.name]: e.target.value, // Actualiza el campo actual (name, email o password)
+            ...formData,
+            [name]: value,
         });
+
+        // Validar en tiempo real
+        if (name === "email") {
+            setValidations({
+                ...validations,
+                emailValid: validateEmail(value),
+            });
+        }
+        if (name === "password") {
+            setValidations({
+                ...validations,
+                passwordValid: validatePassword(value),
+            });
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+
+        // Validar antes de enviar
+        if (!validateEmail(formData.email)) {
+            setError("Email inválido. Por favor ingresa un email válido.");
+            return;
+        }
+
+        if (!validatePassword(formData.password)) {
+            setError(
+                "Contraseña no cumple requisitos: " +
+                getPasswordRequirements(formData.password).join(", ")
+            );
+            return;
+        }
+
+        if (!formData.name.trim()) {
+            setError("El nombre es requerido.");
+            return;
+        }
 
         try {
             // 1. Envío de datos al endpoint de registro
@@ -63,22 +127,23 @@ const Register = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Campo de Nombre */}
                     <div>
                         <label
                             htmlFor="name"
-                            className="block text-sm font-medium text-gray-700"
+                            className="block text-sm font-semibold text-gray-800 mb-2"
                         >
                             Nombre
                         </label>
                         <input
                             type="text"
                             id="name"
-                            name="name" // ¡Importante! Debe coincidir con el estado
+                            name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition duration-200"
+                            placeholder="Tu nombre completo"
                             required
                         />
                     </div>
@@ -87,43 +152,93 @@ const Register = () => {
                     <div>
                         <label
                             htmlFor="email"
-                            className="block text-sm font-medium text-gray-700"
+                            className="block text-sm font-semibold text-gray-800 mb-2"
                         >
                             Email
                         </label>
                         <input
                             type="email"
                             id="email"
-                            name="email" // ¡Importante!
+                            name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className={`w-full px-4 py-2 border-2 rounded-lg bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition duration-200 ${
+                                formData.email && !validations.emailValid
+                                    ? "border-red-400 focus:border-red-500 focus:ring-red-200"
+                                    : formData.email && validations.emailValid
+                                    ? "border-green-400 focus:border-green-500 focus:ring-green-200"
+                                    : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"
+                            }`}
+                            placeholder="tu@email.com"
                             required
                         />
+                        {formData.email && !validations.emailValid && (
+                            <p className="mt-2 text-xs font-medium text-red-600 flex items-center gap-1">
+                                ✗ Email inválido
+                            </p>
+                        )}
+                        {formData.email && validations.emailValid && (
+                            <p className="mt-2 text-xs font-medium text-green-600 flex items-center gap-1">
+                                ✓ Email válido
+                            </p>
+                        )}
                     </div>
 
                     {/* Campo de Contraseña */}
                     <div>
                         <label
                             htmlFor="password"
-                            className="block text-sm font-medium text-gray-700"
+                            className="block text-sm font-semibold text-gray-800 mb-2"
                         >
                             Contraseña
                         </label>
                         <input
                             type="password"
                             id="password"
-                            name="password" // ¡Importante!
+                            name="password"
                             value={formData.password}
                             onChange={handleChange}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className={`w-full px-4 py-2 border-2 rounded-lg bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 transition duration-200 ${
+                                formData.password && !validations.passwordValid
+                                    ? "border-red-400 focus:border-red-500 focus:ring-red-200"
+                                    : formData.password && validations.passwordValid
+                                    ? "border-green-400 focus:border-green-500 focus:ring-green-200"
+                                    : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-200"
+                            }`}
+                            placeholder="Contraseña segura"
                             required
                         />
+                        {formData.password && !validations.passwordValid && (
+                            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-xs font-semibold text-red-700 mb-2">
+                                    📋 Requisitos faltantes:
+                                </p>
+                                <ul className="space-y-1">
+                                    {getPasswordRequirements(formData.password).map(
+                                        (req, idx) => (
+                                            <li key={idx} className="text-xs text-red-600 flex items-center gap-2">
+                                                <span>•</span> {req}
+                                            </li>
+                                        )
+                                    )}
+                                </ul>
+                            </div>
+                        )}
+                        {formData.password && validations.passwordValid && (
+                            <p className="mt-2 text-xs font-medium text-green-600 flex items-center gap-1">
+                                ✓ Contraseña válida
+                            </p>
+                        )}
                     </div>
 
                     <button
                         type="submit"
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        disabled={!validations.emailValid || !validations.passwordValid || !formData.name.trim()}
+                        className={`w-full py-2 px-4 rounded-lg font-bold text-white transition duration-200 shadow-md ${
+                            !validations.emailValid || !validations.passwordValid || !formData.name.trim()
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-orange-600 hover:bg-orange-700 active:scale-95"
+                        }`}
                     >
                         Registrarse
                     </button>

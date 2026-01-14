@@ -54,4 +54,4 @@ Rutas protegidas requieren el header: `Authorization: Bearer <token>`.
 - Considera configurar `nodemon` para desarrollo (si no está presente).
 
 ## Autor
-Proyecto del reto.
+Santiago Torres Herrera 

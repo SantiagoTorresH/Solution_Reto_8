@@ -12,23 +12,56 @@ const JWT_SECRET = process.env.JWT_SECRET || "clave_por_defecto";
 // Usar middleware centralizado para verificar JWT
 const verifyToken = require('../middleware/authMiddleware');
 
+// Funciones de validación
+const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+const validatePassword = (password) => {
+    // Mínimo 8 caracteres, mayúscula, minúscula, número
+    if (password.length < 8) return false;
+    if (!/[A-Z]/.test(password)) return false;
+    if (!/[a-z]/.test(password)) return false;
+    if (!/[0-9]/.test(password)) return false;
+    return true;
+};
+
 // 1. REGISTRO (MongoDB)
 router.post('/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        
+
+        // Validaciones de entrada
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: "Todos los campos son requeridos" });
+        }
+
+        if (!validateEmail(email)) {
+            return res.status(400).json({ message: "Email inválido" });
+        }
+
+        if (!validatePassword(password)) {
+            return res.status(400).json({
+                message: "Contraseña debe tener: mínimo 8 caracteres, mayúscula, minúscula y número",
+            });
+        }
+
         // Buscar en la DB si ya existe
         const userExists = await User.findOne({ email });
-        if (userExists) return res.status(400).json({ message: "El usuario ya existe" });
+        if (userExists) return res.status(400).json({ message: "El email ya está registrado" });
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         // Guardar en MongoDB
-        const newUser = new User({ name, email, password: hashedPassword });
+        const newUser = new User({ name: name.trim(), email: email.toLowerCase(), password: hashedPassword });
         await newUser.save();
 
         res.status(201).json({ message: "Usuario registrado con éxito" });
-    } catch (e) { res.status(500).json({ message: "Error en el servidor" }); }
+    } catch (e) {
+        console.error("Error en registro:", e);
+        res.status(500).json({ message: "Error en el servidor" });
+    }
 });
 
 // 2. LOGIN (MongoDB)

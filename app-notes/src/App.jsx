@@ -11,7 +11,7 @@ import Footer from './components/Footer';
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-700 rounded-md">
+    <div className="min-h-screen flex flex-col bg-zinc-900 rounded-md">
 
       <main className="flex-grow">
         <Routes>

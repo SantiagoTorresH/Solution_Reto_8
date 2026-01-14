@@ -37,7 +37,10 @@ npm run build
 - Ajusta `VITE_API_URL` si tu backend corre en otro host/puerto.
 
 ## Autor
-Proyecto del reto.
+Santiago Torres 
+
+
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
