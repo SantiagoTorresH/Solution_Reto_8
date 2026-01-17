@@ -9,4 +9,4 @@ const NoteSchema = new mongoose.Schema({
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true }); // Esto añade fecha de creación automáticamente
 
-module.exports = mongoose.model('Note', NoteSchema);
+module.exports = mongoose.model('Note', NoteSchema, 'notas');
