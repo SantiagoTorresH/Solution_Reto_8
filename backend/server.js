@@ -15,14 +15,45 @@ mongoose.connect(process.env.MONGO_URI)
 // --- 2. MIDDLEWARES --- 
 
 // Configuración de CORS
+const allowedOrigins = [
+    'http://localhost:5173', 
+    'http://localhost:5174',
+    process.env.FRONTEND_URL, // URL del frontend en producción
+    // Permitir cualquier URL de Vercel (patrón común)
+    /^https:\/\/.*\.vercel\.app$/,
+    // Permitir cualquier URL de Render (por si acaso)
+    /^https:\/\/.*\.onrender\.com$/
+].filter(Boolean); // Eliminar valores undefined/null
+
 app.use(cors({
-    origin: [
-        'http://localhost:5173', 
-        'http://localhost:5174',
-        process.env.FRONTEND_URL // URL del frontend en producción
-    ],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: function (origin, callback) {
+        // Permitir requests sin origin (como Postman o aplicaciones móviles)
+        if (!origin) return callback(null, true);
+        
+        // Verificar si el origin está en la lista permitida
+        const isAllowed = allowedOrigins.some(allowedOrigin => {
+            if (typeof allowedOrigin === 'string') {
+                return origin === allowedOrigin;
+            } else if (allowedOrigin instanceof RegExp) {
+                return allowedOrigin.test(origin);
+            }
+            return false;
+        });
+        
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            // En desarrollo, permitir todos los origins para facilitar debugging
+            if (process.env.NODE_ENV !== 'production') {
+                callback(null, true);
+            } else {
+                callback(new Error('No permitido por CORS'));
+            }
+        }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Procesar cuerpos JSON
