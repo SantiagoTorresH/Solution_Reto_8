@@ -23,8 +23,8 @@ const Notes = () => {
     // 1. Función para obtener las notas (Definida fuera para reutilizarla)
     const fetchNotes = async () => {
         try {
-            // La ruta completa es /api/auth/notes (axiosClient ya tiene /api como baseURL)
-            const response = await axiosClient.get('/auth/notes');
+            // La ruta completa es /api/notes (axiosClient ya tiene /api como baseURL)
+            const response = await axiosClient.get('/notes');
             setNotes(response.data);
         } catch (error) {
             console.error("Error al obtener notas:", error?.message || error);
@@ -40,7 +40,7 @@ const Notes = () => {
         let mounted = true;
         const load = async () => {
             try {
-                const res = await axiosClient.get("/auth/notes");
+                const res = await axiosClient.get("/notes");
                 if (mounted) setNotes(res.data);
             } catch (err) {
                 console.error("Error al obtener notas:", err);
@@ -58,7 +58,7 @@ const Notes = () => {
     // 3. Función para eliminar nota
     const handleDelete = async (id) => {
         try {
-            await axiosClient.delete(`/auth/notes/${id}`);
+            await axiosClient.delete(`/notes/${id}`);
             fetchNotes(); // Recargar la lista
             showNotification('Nota eliminada correctamente', 'success');
         } catch (error) {

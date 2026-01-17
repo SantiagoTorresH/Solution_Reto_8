@@ -33,11 +33,11 @@ const NoteForm = ({ onNoteCreated, editingNote, clearEditing, showNotification }
         try {
             if (editingNote) {
                 // MODO EDICIÓN: Usamos PUT y el ID de la nota
-                await axiosClient.put(`/auth/notes/${editingNote._id}`, formData);
+                await axiosClient.put(`/notes/${editingNote._id}`, formData);
                 if (showNotification) showNotification("¡Nota actualizada con éxito!", "success");
             } else {
                 // MODO CREACIÓN: Usamos POST
-                await axiosClient.post('/auth/notes', formData);
+                await axiosClient.post('/notes', formData);
                 if (showNotification) showNotification("¡Nota creada con éxito!", "success");
             }
             
