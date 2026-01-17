@@ -9,16 +9,17 @@ const app = express();
 // --- 1. CONEXIÓN A LA BASE DE DATOS ---
 // Es mejor poner esto cerca del inicio para saber si la app tiene "corazón" (DB)
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('✅ Conectado a MongoDB local'))
+    .then(() => console.log('✅ Conectado a MongoDB en la nube'))
     .catch(err => console.error('❌ Error al conectar a MongoDB:', err));
 
-// --- 2. MIDDLEWARES ---
+// --- 2. MIDDLEWARES --- 
 
 // Configuración de CORS
 app.use(cors({
     origin: [
         'http://localhost:5173', 
-        'http://localhost:5174'
+        'http://localhost:5174',
+        process.env.FRONTEND_URL // URL del frontend en producción
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
@@ -62,6 +63,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 4000; 
 
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
-    console.log(`📂 Base de datos configurada en: ${process.env.MONGO_URI}`);
+    // console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+    // console.log(`📂 Base de datos configurada en: ${process.env.MONGO_URI}`);
 });
