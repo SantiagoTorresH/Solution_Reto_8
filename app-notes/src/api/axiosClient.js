@@ -2,9 +2,10 @@
 
 import axios from 'axios';
 
-// 1. Definir la URL base de tu backend
-// IMPORTANTE: Asegúrate de que esta sea la URL donde correrá tu API (ej. http://localhost:4000)
-const API_URL = 'http://localhost:4000/api'; //
+// 1. Definir la URL base de tu backend desde variables de entorno
+// En desarrollo: http://localhost:4000/api
+// En producción: https://tu-backend.onrender.com/api
+const API_URL = import.meta.env.VITE_API_URL;
 
 const axiosClient = axios.create({
     baseURL: API_URL,
