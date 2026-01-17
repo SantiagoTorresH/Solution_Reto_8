@@ -39,6 +39,9 @@ app.use((req, res, next) => {
 // Prefijo /api/auth para todas las rutas dentro de auth.js
 app.use('/api/auth', require('./routes/auth')); 
 
+// Prefijo /api/notes para todas las rutas dentro de notes.js
+app.use('/api/notes', require('./routes/notes'));
+
 // Ruta de bienvenida
 app.get('/', (req, res) => {
     res.send('API de Notas está funcionando');
