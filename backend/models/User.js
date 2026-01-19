@@ -7,4 +7,5 @@ const UserSchema = new mongoose.Schema({
     password: { type: String, required: true }
 });
 
-module.exports = mongoose.model('User', UserSchema, 'notas');
+// Usar la colección 'users' en lugar de 'notas'
+module.exports = mongoose.model('User', UserSchema, 'users');
