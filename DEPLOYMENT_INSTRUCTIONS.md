@@ -1,6 +1,16 @@
 # Instrucciones de Despliegue - Solución de Errores
 
-## Errores Corregidos
+## ⚠️ PROBLEMAS CRÍTICOS RESUELTOS
+
+### Problema 1: 404 al recargar la página en Vercel ✅
+**Solución:** Se creó `vercel.json` para configurar el routing de SPA (Single Page Application).
+
+### Problema 2: Las notas desaparecen al reiniciar el servidor ✅
+**Causa:** El backend estaba usando un array en memoria que se reseteaba cada vez que Render reiniciaba el servidor.
+
+**Solución:** Se actualizó `backend/routes/notes.js` para usar MongoDB en lugar del array en memoria. Ahora las notas se guardan permanentemente en la base de datos.
+
+## Errores Corregidos Anteriormente
 
 ### 1. ✅ Error 404 en `/api/notes`
 **Problema:** La variable de entorno `VITE_API_URL` no estaba configurada en Vercel.
@@ -58,13 +68,29 @@ Asegúrate de que en Render tengas configuradas estas variables de entorno:
 
 Los errores relacionados con `chrome-extension://` y `runtime.lastError` son causados por extensiones del navegador (como Grammarly, LastPass, etc.) y **NO afectan tu aplicación**. Puedes ignorarlos.
 
+## Pasos para Desplegar las Correcciones
+
+### 1. Frontend (Vercel)
+1. **Commit y push** de los cambios (incluyendo `vercel.json`)
+2. Vercel detectará los cambios automáticamente y hará redeploy
+3. **Verificar** que `vercel.json` esté en la raíz de `app-notes/`
+
+### 2. Backend (Render)
+1. **Commit y push** de los cambios en `backend/routes/notes.js`
+2. Render debería detectar los cambios y hacer redeploy automáticamente
+3. **Verificar** que las variables de entorno estén configuradas:
+   - `MONGO_URI` - Tu conexión a MongoDB
+   - `JWT_SECRET` - Tu clave secreta
+   - `PORT` - (Render lo asigna automáticamente)
+
 ## Verificación
 
-Después de configurar las variables de entorno y hacer redeploy:
+Después de hacer redeploy en ambos servicios:
 
-1. ✅ El error 404 debería desaparecer
-2. ✅ Deberías poder crear, editar y eliminar notas
-3. ✅ Las peticiones deberían funcionar correctamente
+1. ✅ El error 404 al recargar debería desaparecer
+2. ✅ Las notas deberían persistir después de reiniciar el servidor
+3. ✅ Deberías poder crear, editar y eliminar notas
+4. ✅ Las notas no desaparecerán al cerrar sesión y volver a iniciar
 
 ## Notas Adicionales
 

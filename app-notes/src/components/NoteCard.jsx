@@ -17,7 +17,13 @@ const NoteCard = ({ note, onDelete, onEdit }) => {
         <div className={`p-4 border-l-8 rounded-lg shadow-sm ${getCategoryColor(note.categoria)}`}>
             <div className="flex justify-between items-start">
                 <h4 className="font-bold text-lg text-gray-800">{note.titulo}</h4>
-                <span className="text-xs text-gray-500">{new Date(note.createdAt).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-500">
+                    {note.createdAt 
+                        ? new Date(note.createdAt).toLocaleDateString() 
+                        : note.fechaCreacion 
+                            ? new Date(note.fechaCreacion).toLocaleDateString()
+                            : 'Sin fecha'}
+                </span>
             </div>
             <p className="text-gray-600 mt-2 whitespace-pre-wrap">{note.contenido}</p>
             
