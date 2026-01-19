@@ -9,7 +9,39 @@ const app = express();
 // --- 1. CONEXIÓN A LA BASE DE DATOS ---
 // Es mejor poner esto cerca del inicio para saber si la app tiene "corazón" (DB)
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('✅ Conectado a MongoDB en la nube'))
+    .then(async () => {
+        console.log('✅ Conectado a MongoDB en la nube');
+        
+        // Limpiar índice problemático de la colección 'notas'
+        // Este índice se creó cuando User usaba la colección 'notas'
+        try {
+            const db = mongoose.connection.db;
+            const notasCollection = db.collection('notas');
+            
+            // Obtener todos los índices
+            const indexes = await notasCollection.indexes();
+            const emailIndex = indexes.find(idx => idx.name === 'email_1');
+            
+            if (emailIndex) {
+                console.log('🔧 Eliminando índice problemático email_1 de la colección notas...');
+                await notasCollection.dropIndex('email_1');
+                console.log('✅ Índice email_1 eliminado correctamente');
+            }
+        } catch (indexError) {
+            // Si el índice no existe o ya fue eliminado, no es un problema
+            // MongoDB puede devolver diferentes códigos de error para índice no encontrado
+            const isIndexNotFound = indexError.code === 27 || 
+                                   indexError.code === 85 || 
+                                   indexError.message?.includes('index not found') ||
+                                   indexError.message?.includes('not found');
+            
+            if (!isIndexNotFound) {
+                console.warn('⚠️ Advertencia al limpiar índices:', indexError.message);
+            } else {
+                console.log('ℹ️ El índice email_1 no existe (ya fue eliminado o nunca existió)');
+            }
+        }
+    })
     .catch(err => console.error('❌ Error al conectar a MongoDB:', err));
 
 // --- 2. MIDDLEWARES --- 
