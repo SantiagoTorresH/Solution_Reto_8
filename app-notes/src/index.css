@@ -56,7 +56,8 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #495fb0;
+  background-color: #182144;
+  /* background-color: #182144; */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -93,7 +94,7 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #1126ad;
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -116,4 +117,7 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+
+
+  
 }

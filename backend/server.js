@@ -4,6 +4,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config(); // Cargamos variables de entorno una sola vez al principio
 
+
 const app = express();
 
 // --- 1. CONEXIÓN A LA BASE DE DATOS ---
@@ -132,3 +133,5 @@ app.listen(PORT, () => {
     // console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
     // console.log(`📂 Base de datos configurada en: ${process.env.MONGO_URI}`);
 });
+
+
