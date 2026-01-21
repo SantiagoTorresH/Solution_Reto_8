@@ -40,7 +40,7 @@ const Header = ({onSearch}) => { // recibimos la de busqueda
                 </div>
 
                 {/* BUSCADOR */}
-                <div className="relative w-full max-w-md">
+                <div className="relative w-full max-w-md rounded-full shadow-md shadow-indigo-500/20 transition-shadow focus-within:shadow-lg focus-within:shadow-indigo-500/30">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg className="h-5 w-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -50,7 +50,7 @@ const Header = ({onSearch}) => { // recibimos la de busqueda
                             type="text"
                             placeholder="Buscar en mis notas..."
                             onChange={(e) => onSearch && onSearch(e.target.value)} // Enviamos el texto al padre si existe la función
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-full leading-5 bg-pink-950 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
+                             className="block w-full pl-10 pr-3 py-2 border border-white/10 rounded-full leading-5 bg-pink-950 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
                         />
                     </div>
 
