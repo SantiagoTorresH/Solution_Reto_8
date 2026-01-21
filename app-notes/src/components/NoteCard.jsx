@@ -31,13 +31,13 @@ const NoteCard = ({ note, onDelete, onEdit }) => {
                 {/* BOTÓN EDITAR */}
                 <button 
                     onClick={() => onEdit(note)} 
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                    className="text-sky-600 hover:text-orange-800 text-sm font-medium bg-blue-900 rounded-md px-2 py-1 hover:bg-blue-950 transition"
                 >
                     Editar
                 </button>
                 <button 
                     onClick={() => onDelete(note._id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                    className="text-red-600 hover:text-blue-800 text-sm font-medium bg-orange-500 rounded-md px-2 py-1 hover:bg-orange-600 transition"
                 >
                     Eliminar
                 </button>

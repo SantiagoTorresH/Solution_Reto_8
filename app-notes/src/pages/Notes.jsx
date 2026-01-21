@@ -91,6 +91,7 @@ const Notes = () => {
 
 
     return (
+        <div className="min-h-screen bg-blue-950">
         <div className="max-w-6xl mx-auto p-4">
             
 
@@ -117,6 +118,8 @@ const Notes = () => {
             )}
             <Header onSearch={setSearchTerm} />
 
+            {/* PANEL PRINCIPAL (fondo + sombra solo para /notes) */}
+            <div className="rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl shadow-black/30 p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Columna Izquierda: Formulario */}
                 <div className="md:col-span-1">
@@ -161,6 +164,7 @@ const Notes = () => {
                     )}
                 </div>
             </div>
+            </div>
             {/* MODAL DE CONFIRMACIÓN */}
             {modal.show && (
                 <div 
@@ -202,6 +206,7 @@ const Notes = () => {
             )}
 
 
+        </div>
         </div>
     );
 };
