@@ -1,0 +1,29 @@
+Hola — en este video voy a explicar de forma directa cómo funciona el código de la app de notas y cómo viaja la información
+desde el frontend hasta la base de datos. Duración aproximada: 1:30–2:00 minutos.
+
+1) Arquitectura (10s)
+La app tiene tres capas: Frontend en React, Backend en Express y MongoDB como base de datos. Archivos clave: 
+`app-notes/src/api/axiosClient.js`, `backend/routes/auth.js`, `backend/middleware/authMiddleware.js`, `backend/models/*` y `backend/server.js`.
+
+2) Registro y Login (25s)
+- Registro (`POST /api/auth/register`): el frontend valida formato y fuerza de contraseña; el backend vuelve a validar, 
+	hashea la contraseña con `bcrypt` y guarda un `User` en la colección `users`.
+- Login (`POST /api/auth/login`): backend verifica credenciales con `bcrypt.compare` y, si son válidas, genera un JWT
+	firmado con `JWT_SECRET` (expira en 1h) y devuelve `{ token, user }`.
+
+3) JWT y middleware (15s)
+El token se guarda en `localStorage`. `axiosClient` añade el token en el header `Authorization: Bearer <token>`.
+El middleware `verifyToken` en el backend extrae y verifica el token, y pone `req.user` (id/email) para las rutas protegidas.
+
+4) Rutas de notas (25s)
+- `GET /api/notes`: usa `req.user.id` para traer solo las notas del usuario.
+- `POST /api/notes`: crea una `Note` con el campo `usuario` apuntando al `_id` del user.
+- `PUT /api/notes/:id` y `DELETE /api/notes/:id`: antes de modificar o borrar, el backend comprueba
+	`note.usuario.toString() === req.user.id` para asegurar que solo el dueño puede hacerlo.
+
+5) Demo sugerida y cierre (20s)
+Haz una demo corta: 1) Registrarse, 2) Iniciar sesión (guardar token), 3) Crear nota, 4) Editar nota (verificar autorización), 5) Eliminar nota.
+Consejos finales: valida en frontend por UX y siempre en backend por seguridad; no guardes contraseñas en texto plano;
+configura `JWT_SECRET` y `MONGO_URI` en `.env` y muéstralo al final.
+
+Fin — ¿Quieres que lo adapte a un guion aún más corto o que lo divida en diapositivas? 

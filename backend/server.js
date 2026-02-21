@@ -8,7 +8,7 @@ require('dotenv').config(); // Cargamos variables de entorno una sola vez al pri
 const app = express();
 
 // --- 1. CONEXIÓN A LA BASE DE DATOS ---
-// Es mejor poner esto cerca del inicio para saber si la app tiene "corazón" (DB)
+//  app tiene heart (DB)
 mongoose.connect(process.env.MONGO_URI)
     .then(async () => {
         console.log('✅ Conectado a MongoDB en la nube');

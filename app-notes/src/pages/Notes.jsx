@@ -1,4 +1,4 @@
-// src/pages/Notes.jsx
+// 
 import React, { useState, useEffect } from 'react';
 import axiosClient from '../api/axiosClient';
 import NoteForm from '../components/NoteForm';

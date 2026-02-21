@@ -27,7 +27,7 @@ const Login = () => {
       // 1. Envío de datos al endpoint de login del backend
       const response = await axiosClient.post('/auth/login', formData); 
       
-      // 2. Guardar token y nombre del usuario en localStorage
+      // 2. Guardar token y nombre del usuario en localStorage para usarlo en futuras peticiones
       localStorage.setItem('token', response.data.token);
       if (response.data.user && response.data.user.name) {
         localStorage.setItem('userName', response.data.user.name);

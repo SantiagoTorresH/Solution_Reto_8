@@ -1,0 +1,962 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        ARQUITECTURA DE LA APP - FLUJO DE DATOS                 ║
+║                     Frontend → Backend → Base de Datos                          ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════════════════════
+                              ÍNDICE DE CONTENIDOS
+═══════════════════════════════════════════════════════════════════════════════
+1. Estructura General de la Aplicación
+2. Flujo de REGISTRO
+3. Flujo de LOGIN
+4. Flujo de OBTENER NOTAS
+5. Flujo de CREAR NOTA
+6. Flujo de EDITAR NOTA
+7. Flujo de ELIMINAR NOTA
+8. El Sistema de Autenticación JWT
+9. Interceptores de Axios
+10. Modelos de Datos (Schemas MongoDB)
+
+═══════════════════════════════════════════════════════════════════════════════
+                    1. ESTRUCTURA GENERAL DE LA APLICACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+La aplicación está dividida en 3 capas principales:
+
+    ┌─────────────────────────┐
+    │    FRONTEND (React)      │  ← Usuario interactúa aquí
+    │  (app-notes/src/)        │     - Formularios
+    └────────────┬────────────┘     - Componentes
+                 │
+         (HTTP Requests)            
+                 │
+    ┌────────────▼────────────┐
+    │   BACKEND (Express.js)   │  ← Procesa y valida datos
+    │  (backend/routes/)       │     - Rutas API
+    │  (backend/middleware/)   │     - Autenticación
+    └────────────┬────────────┘     - Lógica de negocio
+                 │
+        (Operaciones DB)            
+                 │
+    ┌────────────▼────────────┐
+    │   BASE DE DATOS (MongoDB)│  ← Almacena la información
+    │   (Colecciones)          │     - Usuarios
+    │   - users                │     - Notas
+    │   - notas                │
+    └──────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+                           2. FLUJO DE REGISTRO
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Usuario llena el formulario (Register.jsx)
+──────────────────────────────────────────────────
+El usuario ingresa:
+  - name: "Juan Pérez"
+  - email: "juan@example.com"
+  - password: "MiPassword123"
+
+PASO 2: Validaciones en Frontend
+─────────────────────────────────
+Antes de enviar, el archivo Register.jsx valida:
+  ✓ Que el email sea válido (formato correcto)
+  ✓ Que la contraseña tenga mínimo 8 caracteres
+  ✓ Que tenga mayúscula, minúscula y número
+
+Si falla alguna validación → Mostrar error al usuario → NO envía nada al backend
+
+PASO 3: Enviar datos al Backend
+────────────────────────────────
+Si pasa las validaciones, usa Axios para hacer petición HTTP:
+
+    axiosClient.post('/auth/register', {
+        name: "Juan Pérez",
+        email: "juan@example.com",
+        password: "MiPassword123"
+    })
+
+La URL completa es: http://localhost:4000/api/auth/register
+
+PASO 4: Backend recibe la petición
+──────────────────────────────────
+El servidor (server.js) recibe la petición POST en la ruta '/auth/register'
+en el archivo (backend/routes/auth.js):
+
+  router.post('/register', async (req, res) => {
+      const { name, email, password } = req.body;
+      // req.body contiene los datos enviados por el frontend
+  })
+
+PASO 5: Backend valida los datos
+─────────────────────────────────
+El backend valida nuevamente (SEGURIDAD):
+  ✓ Que existan todos los campos (name, email, password)
+  ✗ Si falta algo → Return error 400
+
+PASO 6: Backend verifica si el email ya existe
+───────────────────────────────────────────────
+Busca en MongoDB si ese email ya está registrado:
+
+  const userExists = await User.findOne({ email });
+  
+Si existe → Return error 400 "El email ya está registrado"
+
+PASO 7: Encriptar contraseña
+─────────────────────────────
+Por SEGURIDAD, nunca guardamos contraseñas en texto plano.
+Usamos bcryptjs para encriptar:
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  
+Contraseña original: "MiPassword123"
+Contraseña encriptada: "$2a$10$x9K4Z3m2...xY7qP8nH9"
+(Cada vez es diferente, pero bcrypt puede verificarla)
+
+PASO 8: Guardar usuario en MongoDB
+───────────────────────────────────
+Crea un nuevo documento User con los datos:
+
+  const newUser = new User({
+      name: "Juan Pérez",
+      email: "juan@example.com",
+      password: "$2a$10$x9K4Z3m2...xY7qP8nH9"  ← Contraseña encriptada
+  });
+  
+  await newUser.save();  ← Se guarda en la colección 'users'
+
+Documento guardado en MongoDB:
+  {
+      "_id": "507f1f77bcf86cd799439011",  ← ID único generado
+      "name": "Juan Pérez",
+      "email": "juan@example.com",
+      "password": "$2a$10$x9K4Z3m2...xY7qP8nH9",
+      "__v": 0
+  }
+
+PASO 9: Backend responde al Frontend
+─────────────────────────────────────
+Si todo está bien, responde:
+
+  res.status(201).json({ 
+      message: "Usuario registrado con éxito" 
+  })
+
+Código 201 = Creado exitosamente
+
+PASO 10: Frontend recibe la respuesta
+─────────────────────────────────────
+Register.jsx recibe el mensaje de éxito:
+  - Mostrar notificación "Usuario registrado con éxito"
+  - Redirigir usuario a la página de Login
+
+═══════════════════════════════════════════════════════════════════════════════
+                            3. FLUJO DE LOGIN
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Usuario llena el formulario de login (Login.jsx)
+─────────────────────────────────────────────────────────
+El usuario ingresa:
+  - email: "juan@example.com"
+  - password: "MiPassword123"
+
+PASO 2: Enviar al Backend
+──────────────────────────
+    axiosClient.post('/auth/login', {
+        email: "juan@example.com",
+        password: "MiPassword123"
+    })
+
+URL completa: http://localhost:4000/api/auth/login
+
+PASO 3: Backend busca el usuario
+─────────────────────────────────
+En auth.js (route /login):
+
+  const user = await User.findOne({ email });
+  
+Busca en MongoDB si existe usuario con ese email.
+
+PASO 4: Verificar contraseña
+─────────────────────────────
+Compara la contraseña envidada con la encriptada guardada:
+
+  const isPasswordValid = await bcrypt.compare(
+      "MiPassword123",  ← Contraseña que escribe el usuario
+      "$2a$10$x9K4Z3m2...xY7qP8nH9"  ← Contraseña guardada
+  );
+
+bcrypt descifra y compara automáticamente. Si no coincide → Error 400
+
+PASO 5: Si las credenciales son válidas
+────────────────────────────────────────
+El backend GENERA un JWT (JSON Web Token):
+
+  const token = jwt.sign(
+      { id: user._id, email: user.email },  ← Datos del usuario
+      JWT_SECRET,                            ← Clave secreta (en .env)
+      { expiresIn: '1h' }                    ← Válido 1 hora
+  );
+
+Ejemplo de token generado:
+  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUwN2YxZjc3YmNmODZjZDc5OTQzOTAxMSIsImVtYWlsIjoianVhbkBleGFtcGxlLmNvbSIsImlhdCI6MTcwMjQ5ODQwMCwiZXhwIjoxNzAyNTAyMDAwfQ.x3K2m9p...
+
+Este token contiene:
+  - ID del usuario
+  - Email del usuario
+  - Cuándo se creó
+  - Cuándo expira
+
+PASO 6: Backend responde con el token
+──────────────────────────────────────
+Responde al frontend:
+
+  res.json({
+      token: "eyJhbGciOiJIUzI1NiIsInR5cCI...",
+      user: {
+          id: "507f1f77bcf86cd799439011",
+          name: "Juan Pérez",
+          email: "juan@example.com"
+      }
+  });
+
+PASO 7: Frontend almacena el token
+──────────────────────────────────
+En Login.jsx:
+
+  localStorage.setItem('token', response.data.token);
+  localStorage.setItem('userName', response.data.user.name);
+
+El localStorage es memoria del navegador que persiste hasta que se limpia.
+El token se guarda en LOCAL STORAGE para usarlo en futuras peticiones.
+
+PASO 8: Redirigir usuario
+──────────────────────────
+Una vez autenticado, redirige a la página protegida:
+
+  navigate('/notes');
+
+═══════════════════════════════════════════════════════════════════════════════
+                        4. FLUJO DE OBTENER NOTAS
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Página de Notas se carga (Notes.jsx)
+──────────────────────────────────────────────
+Cuando el usuario entra a /notes, useEffect se ejecuta:
+
+  useEffect(() => {
+      const res = await axiosClient.get("/notes");
+      setNotes(res.data);
+  }, []);
+
+PASO 2: Axios interceptor agrega el TOKEN
+──────────────────────────────────────────
+IMPORTANTE: Antes de enviar la petición, el interceptor:
+
+  axiosClient.interceptors.request.use((config) => {
+      const token = localStorage.getItem('token');
+      if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+  });
+
+Petición que llega al backend:
+  GET http://localhost:4000/api/notes
+  Headers: {
+      Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI..."
+  }
+
+PASO 3: Backend recibe la petición con el token
+───────────────────────────────────────────────
+En auth.js (route GET /notes):
+
+  router.get('/notes', verifyToken, async (req, res) => {
+  
+El middleware 'verifyToken' se ejecuta ANTES de la ruta.
+
+PASO 4: Middleware verifica el token
+─────────────────────────────────────
+En authMiddleware.js:
+
+  const authHeader = req.headers['authorization'];
+  const token = authHeader.split(' ')[1];  ← Extrae el token
+  
+  const decoded = jwt.verify(token, JWT_SECRET);
+  req.user = decoded;  ← Decodifica y almacena datos del usuario
+  next();  ← Continúa a la ruta
+
+Si el token es inválido o expirado → Error 401 "No autorizado"
+
+PASO 5: Ruta obtiene las notas del usuario
+────────────────────────────────────────────
+Ahora sabemos QUIÉN es el usuario (req.user.id):
+
+  const userNotes = await Note.find({ usuario: req.user.id });
+
+Busca en MongoDB SOLO las notas CREADAS POR ESTE USUARIO.
+
+PASO 6: Backend responde con las notas
+─────────────────────────────────────────
+Responde con un array de notas:
+
+  res.json([
+      {
+          "_id": "5f3a1b2c3d4e5f6g7h8i9j0k",
+          "titulo": "Mi primera nota",
+          "contenido": "Contenido de la nota",
+          "categoria": "Personal",
+          "usuario": "507f1f77bcf86cd799439011",
+          "createdAt": "2024-01-15T10:30:00.000Z",
+          "updatedAt": "2024-01-15T10:30:00.000Z"
+      },
+      {
+          "_id": "6a4b2c3d4e5f6g7h8i9j0k1l",
+          "titulo": "Otra nota",
+          "contenido": "Más contenido",
+          "categoria": "Trabajo",
+          "usuario": "507f1f77bcf86cd799439011",
+          "createdAt": "2024-01-15T11:45:00.000Z",
+          "updatedAt": "2024-01-15T11:45:00.000Z"
+      }
+  ]);
+
+PASO 7: Frontend recibe las notas
+──────────────────────────────────
+En Notes.jsx:
+
+  setNotes(res.data);
+
+Guarda las notas en el estado de React.
+
+PASO 8: Mostrar notas en la interfaz
+─────────────────────────────────────
+El componente NoteCard itera sobre las notas:
+
+  {notes.map(note => (
+      <NoteCard key={note._id} note={note} />
+  ))}
+
+Cada nota se muestra en la pantalla.
+
+═══════════════════════════════════════════════════════════════════════════════
+                         5. FLUJO DE CREAR NOTA
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Usuario llena el formulario (NoteForm.jsx)
+───────────────────────────────────────────────────
+El usuario ingresa:
+  - titulo: "Mi tarea importante"
+  - contenido: "Tengo que hacer esto hoy"
+  - categoria: "Trabajo"
+
+PASO 2: Usuario hace clic en "Crear Nota"
+──────────────────────────────────────────
+Se ejecuta handleSubmit en NoteForm.jsx:
+
+  const handleSubmit = async (e) => {
+      e.preventDefault();
+      
+      await axiosClient.post('/notes', formData);
+
+PASO 3: Axios interceptor agrega el TOKEN
+──────────────────────────────────────────
+Igual que en obtener notas, agrega el token al header:
+
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI...
+
+PASO 4: Backend recibe la petición
+──────────────────────────────────
+En auth.js (route POST /notes):
+
+  router.post('/notes', verifyToken, async (req, res) => {
+      const { titulo, contenido, categoria } = req.body;
+
+PASO 5: Middleware verifica el token
+──────────────────────────────────────
+Igual que antes, verifyToken:
+  - Extrae el token
+  - Lo valida
+  - Decodifica los datos del usuario en req.user
+
+PASO 6: Backend crea la nota
+─────────────────────────────
+Crea un nuevo documento Note:
+
+  const newNote = new Note({
+      usuario: req.user.id,  ← ID del usuario autenticado
+      titulo: "Mi tarea importante",
+      contenido: "Tengo que hacer esto hoy",
+      categoria: "Trabajo"
+  });
+
+PASO 7: Guardar nota en MongoDB
+────────────────────────────────
+  await newNote.save();
+
+MongoDB guarda la nota en la colección 'notas':
+
+  {
+      "_id": ObjectId("507f1f77bcf86cd799439011"),  ← ID único
+      "usuario": ObjectId("507f1f77bcf86cd799439011"),  ← Vinculado al usuario
+      "titulo": "Mi tarea importante",
+      "contenido": "Tengo que hacer esto hoy",
+      "categoria": "Trabajo",
+      "createdAt": ISODate("2024-01-15T14:30:00.000Z"),
+      "updatedAt": ISODate("2024-01-15T14:30:00.000Z")
+  }
+
+PASO 8: Backend responde con la nota creada
+────────────────────────────────────────────
+Responde:
+
+  res.status(201).json(newNote);
+
+Código 201 = Creado exitosamente
+
+PASO 9: Frontend recibe la nota
+────────────────────────────────
+En NoteForm.jsx:
+
+  showNotification("¡Nota creada con éxito!", "success");
+  onNoteCreated();  ← Avisa al componente padre para refrescar
+
+PASO 10: Refrescar lista de notas
+──────────────────────────────────
+En Notes.jsx, llama a fetchNotes() nuevamente:
+
+  const res = await axiosClient.get("/notes");
+  setNotes(res.data);
+
+La nueva nota aparece en la pantalla.
+
+═══════════════════════════════════════════════════════════════════════════════
+                         6. FLUJO DE EDITAR NOTA
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Usuario hace clic en "Editar" en una nota
+───────────────────────────────────────────────────
+En NoteCard.jsx:
+
+  <button onClick={() => onEdit(note)}>✏️ Editar</button>
+
+PASO 2: NoteForm se rellena con los datos de la nota
+──────────────────────────────────────────────────────
+En NoteForm.jsx, useEffect detecta cambio:
+
+  useEffect(() => {
+      if (editingNote) {
+          setFormData({
+              titulo: editingNote.titulo,
+              contenido: editingNote.contenido,
+              categoria: editingNote.categoria
+          });
+      }
+  }, [editingNote]);
+
+El formulario cambia a modo EDICIÓN con los datos existentes.
+
+PASO 3: Usuario modifica los datos y guarda
+──────────────────────────────────────────────
+Usuario cambia:
+  - titulo: "Mi tarea importante (ACTUALIZADA)"
+  - contenido: "Cambié el contenido"
+  - categoria: "Personal"
+
+Hace clic en "Guardar Cambios"
+
+PASO 4: Se envía petición PUT con el ID de la nota
+────────────────────────────────────────────────────
+En NoteForm.jsx:
+
+  if (editingNote) {
+      await axiosClient.put(`/notes/${editingNote._id}`, formData);
+  }
+
+Petición:
+  PUT http://localhost:4000/api/notes/507f1f77bcf86cd799439012
+  Body: {
+      titulo: "Mi tarea importante (ACTUALIZADA)",
+      contenido: "Cambié el contenido",
+      categoria: "Personal"
+  }
+  Headers: {
+      Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI..."
+  }
+
+PASO 5: Backend recibe la petición PUT
+───────────────────────────────────────
+En auth.js (route PUT /notes/:id):
+
+  router.put('/notes/:id', verifyToken, async (req, res) => {
+      const { titulo, contenido, categoria } = req.body;
+
+PASO 6: Middleware verifica el token
+──────────────────────────────────────
+verifyToken extrae y valida el token, decodifica req.user
+
+PASO 7: Backend busca la nota por ID
+──────────────────────────────────────
+  const note = await Note.findById(req.params.id);
+
+PASO 8: Verificar que el usuario es el dueño
+──────────────────────────────────────────────
+SEGURIDAD IMPORTANTE:
+
+  if (note.usuario.toString() !== req.user.id) {
+      return res.status(403).json({ message: "No autorizado" });
+  }
+
+Solo el PROPIETARIO de la nota puede editarla.
+Si otro usuario intenta editar la nota de otro → Error 403 "Prohibido"
+
+PASO 9: Actualizar los campos de la nota
+──────────────────────────────────────────
+  note.titulo = titulo || note.titulo;
+  note.contenido = contenido || note.contenido;
+  note.categoria = categoria || note.categoria;
+
+Si un campo llega vacío, se mantiene el valor anterior (||).
+
+PASO 10: Guardar en MongoDB
+─────────────────────────────
+  await note.save();
+
+MongoDB actualiza el documento:
+
+  {
+      "_id": ObjectId("507f1f77bcf86cd799439012"),
+      "usuario": ObjectId("507f1f77bcf86cd799439011"),
+      "titulo": "Mi tarea importante (ACTUALIZADA)",  ⬅ ACTUALIZADO
+      "contenido": "Cambié el contenido",              ⬅ ACTUALIZADO
+      "categoria": "Personal",                         ⬅ ACTUALIZADO
+      "createdAt": ISODate("2024-01-15T14:30:00.000Z"),
+      "updatedAt": ISODate("2024-01-15T15:45:00.000Z")  ⬅ ACTUALIZADO
+  }
+
+PASO 11: Backend responde con la nota actualizada
+──────────────────────────────────────────────────
+  res.json(note);
+
+PASO 12: Frontend muestra notificación de éxito
+──────────────────────────────────────────────────
+En NoteForm.jsx:
+
+  showNotification("¡Nota actualizada con éxito!", "success");
+  onNoteCreated();  ← Refrescar lista
+
+═══════════════════════════════════════════════════════════════════════════════
+                         7. FLUJO DE ELIMINAR NOTA
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Usuario hace clic en "Eliminar" en una nota
+──────────────────────────────────────────────────────
+En NoteCard.jsx:
+
+  <button onClick={() => onDelete(note._id)}>🗑️ Eliminar</button>
+
+PASO 2: Se muestra un modal de confirmación
+──────────────────────────────────────────────
+¿Estás seguro de que quieres eliminar esta nota?
+[Cancelar] [Sí, eliminar]
+
+Si hace clic en "Sí, eliminar":
+
+PASO 3: Se envía petición DELETE
+──────────────────────────────────
+En Notes.jsx:
+
+  await axiosClient.delete(`/notes/${id}`);
+
+Petición:
+  DELETE http://localhost:4000/api/notes/507f1f77bcf86cd799439012
+  Headers: {
+      Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI..."
+  }
+
+PASO 4: Backend recibe la petición DELETE
+──────────────────────────────────────────
+En auth.js (route DELETE /notes/:id):
+
+  router.delete('/notes/:id', verifyToken, async (req, res) => {
+
+PASO 5: Middleware verifica el token
+──────────────────────────────────────
+verifyToken extrae y valida el token.
+
+PASO 6: Backend busca la nota
+───────────────────────────────
+  const note = await Note.findById(req.params.id);
+
+PASO 7: Verificar que es el dueño
+───────────────────────────────────
+  if (note.usuario.toString() !== req.user.id) {
+      return res.status(403).json({ message: "No autorizado" });
+  }
+
+Solo el propietario puede eliminar su propia nota.
+
+PASO 8: Eliminar la nota de MongoDB
+────────────────────────────────────
+  await Note.findByIdAndDelete(req.params.id);
+
+MongoDB borra el documento de la colección 'notas'.
+
+PASO 9: Backend responde con confirmación
+───────────────────────────────────────────
+  res.json({ message: "Nota eliminada con éxito" });
+
+PASO 10: Frontend muestra notificación de éxito
+───────────────────────────────────────────────
+En Notes.jsx:
+
+  showNotification('Nota eliminada correctamente', 'success');
+
+PASO 11: Refrescar lista de notas
+──────────────────────────────────
+  fetchNotes();
+
+La nota desaparece de la pantalla.
+
+═══════════════════════════════════════════════════════════════════════════════
+                    8. EL SISTEMA DE AUTENTICACIÓN JWT
+═══════════════════════════════════════════════════════════════════════════════
+
+¿Qué es JWT?
+────────────
+JWT = JSON Web Token
+
+Es una forma SEGURA de enviar información entre el cliente y servidor.
+El usuario recibe un token después de hacer login, y lo usa para demostrar
+que está autenticado sin enviar su contraseña cada vez.
+
+Estructura de un JWT:
+────────────────────
+Un JWT tiene 3 partes separadas por puntos (.):
+
+  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjUwN2YxZjc3YmNmODZjZDc5OTQzOTAxMSIsImVtYWlsIjoianVhbkBleGFtcGxlLmNvbSIsImlhdCI6MTcwMjQ5ODQwMCwiZXhwIjoxNzAyNTAyMDAwfQ.x3K2m9p...
+
+  ▲      PARTE 1       ▲                  PARTE 2                    ▲ PARTE 3
+  Header (Algoritmo)   Payload (Datos)               Firma (Seguridad)
+
+PARTE 1 - HEADER:
+  {
+      "alg": "HS256",  ← Algoritmo de encriptación
+      "typ": "JWT"     ← Tipo de token
+  }
+  (Codificado en base64)
+
+PARTE 2 - PAYLOAD (Los datos):
+  {
+      "id": "507f1f77bcf86cd799439011",    ← ID del usuario
+      "email": "juan@example.com",         ← Email del usuario
+      "iat": 1702498400,                   ← Cuándo se emitió
+      "exp": 1702502000                    ← Cuándo expira (1 hora después)
+  }
+  (Codificado en base64)
+
+PARTE 3 - FIRMA:
+  Es una firma digital que verifica que el token NO fue modificado.
+  Se crea combinando el header, payload y una clave secreta (JWT_SECRET).
+  
+  HMACSHA256(
+      base64UrlEncode(header) + "." + base64UrlEncode(payload),
+      JWT_SECRET
+  )
+
+Flujo de JWT en la app:
+────────────────────────
+
+1. LOGIN:
+   Usuario → POST /login (email, password)
+   Backend → Verifica credenciales en BD
+   Backend → Genera JWT con id y email
+   Backend → Envía JWT al Frontend
+   Frontend → Guarda JWT en localStorage
+
+2. PETICIONES PROTEGIDAS:
+   Frontend → GET /notes
+   Interceptor → Agrega JWT en header Authorization
+   Backend → Recibe JWT
+   Middleware (verifyToken) → Valida JWT con JWT_SECRET
+   Si válido → Decodifica y obtiene id del usuario
+   Backend → Usa id para filtrar notas del usuario
+   Backend → Responde con datos
+
+3. TOKEN EXPIRADO:
+   Después de 1 hora, el token expira
+   Si intenta usar un token expirado → Error 401 "Token expirado"
+   Interceptor de respuesta redirige a Login
+
+═══════════════════════════════════════════════════════════════════════════════
+                        9. INTERCEPTORES DE AXIOS
+═══════════════════════════════════════════════════════════════════════════════
+
+¿Qué es un interceptor?
+───────────────────────
+Son funciones que se ejecutan ANTES o DESPUÉS de enviar/recibir peticiones HTTP.
+
+En esta app, usamos 2 interceptores:
+
+INTERCEPTOR 1: REQUEST (Antes de enviar)
+─────────────────────────────────────────
+Ubicación: axiosClient.js
+
+  axiosClient.interceptors.request.use((config) => {
+      // Se ejecuta ANTES de enviar cualquier petición
+      const token = localStorage.getItem('token');
+      if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+  });
+
+¿Qué hace?
+  - Obtiene el token guardado en localStorage
+  - Lo agrega automáticamente en TODOS los requests
+  - En el header 'Authorization' con formato "Bearer TOKEN"
+
+BENEFICIO: No hace falta enviar el token manualmente en cada petición.
+
+Ejemplo:
+  // Sin interceptor, tendrías que hacer esto cada vez:
+  axiosClient.get('/notes', {
+      headers: {
+          Authorization: `Bearer ${token}`
+      }
+  });
+
+  // Con interceptor, solo haces:
+  axiosClient.get('/notes');  ← El interceptor agrega el token automáticamente
+
+INTERCEPTOR 2: RESPONSE (Después de recibir respuesta)
+───────────────────────────────────────────────────────
+Ubicación: axiosClient.js
+
+  axiosClient.interceptors.response.use(
+      (response) => response,
+      (error) => {
+          if (error.response?.status === 401) {
+              // Token expirado o no válido
+              localStorage.removeItem('token');
+              localStorage.removeItem('userName');
+              window.location.href = '/login';  ← Redirige a login
+          }
+          return Promise.reject(error);
+      }
+  );
+
+¿Qué hace?
+  - Si el servidor responde con error 401 (No autorizado)
+  - Significa que el token expiró o es inválido
+  - Limpia el localStorage
+  - Redirige automáticamente a la página de login
+
+BENEFICIO: El usuario no puede quedarse en una página sin autenticación.
+
+═══════════════════════════════════════════════════════════════════════════════
+                     10. MODELOS DE DATOS (SCHEMAS MONGODB)
+═══════════════════════════════════════════════════════════════════════════════
+
+MongoDB es una base de datos NoSQL que guarda documentos en formato JSON.
+
+
+MODELO USER (Usuarios)
+──────────────────────
+Archivo: backend/models/User.js
+
+Estructura:
+  {
+      "_id": ObjectId,           ← ID único generado por MongoDB
+      "name": String,            ← Nombre del usuario
+      "email": String(unique),   ← Email único (no puede haber 2 iguales)
+      "password": String         ← Contraseña encriptada
+  }
+
+Ejemplo de documento real en la colección 'users':
+  {
+      "_id": ObjectId("507f1f77bcf86cd799439011"),
+      "name": "Juan Pérez",
+      "email": "juan@example.com",
+      "password": "$2a$10$hashes3nQvtAkqHxRf4R.K2qGvHZSw4d3LWJDRf4f...",
+      "__v": 0  ← Control de versión de MongoDB
+  }
+
+Restricciones:
+  - El campo email es ÚNICO → No puede haber 2 usuarios con mismo email
+  - La contraseña es OBLIGATORIA
+  - El nombre es OBLIGATORIO
+
+
+MODELO NOTE (Notas)
+────────────────────
+Archivo: backend/models/Note.js
+
+Estructura:
+  {
+      "_id": ObjectId,                    ← ID único de la nota
+      "usuario": ObjectId(ref: User),    ← ID del usuario que la creó (RELACIÓN)
+      "titulo": String,                  ← Título de la nota
+      "contenido": String,               ← Contenido de la nota
+      "categoria": String,               ← Categoría (default: "Personal")
+      "createdAt": Date,                 ← Fecha de creación (automático)
+      "updatedAt": Date                  ← Fecha de última actualización (automático)
+  }
+
+Ejemplo de documento real en la colección 'notas':
+  {
+      "_id": ObjectId("5f3a1b2c3d4e5f6g7h8i9j0k"),
+      "usuario": ObjectId("507f1f77bcf86cd799439011"),  
+      "titulo": "Comprar leche",
+      "contenido": "Leche de vaca, 2 litros, en la tienda cerca",
+      "categoria": "Personal",
+      "createdAt": ISODate("2024-01-15T10:30:00.000Z"),
+      "updatedAt": ISODate("2024-01-15T10:30:00.000Z"),
+      "__v": 0
+  }
+
+RELACIÓN: usuario ↔ notes
+──────────────────────────
+El campo 'usuario' en Note es una REFERENCIA al ID del usuario en User.
+Esto significa:
+  - Cada nota pertenece a UN usuario
+  - Un usuario puede tener MUCHAS notas (relación 1 a Muchos)
+
+Si buscas todas las notas de Juan:
+  Note.find({ usuario: ObjectId("507f1f77bcf86cd799439011") })
+
+  Resultado:
+  [
+      { nota 1 },
+      { nota 2 },
+      { nota 3 }
+  ]
+
+
+¿Cómo la app protege los datos?
+────────────────────────────────
+1. AUTENTICACIÓN:
+   - Solo usuarios con un JWT válido pueden acceder a /notes
+
+2. AUTORIZACIÓN:
+   - El backend valida que el usuario es el DUEÑO de la nota
+   - Si tries editar nota otra persona → Error 403
+
+3. ENCRIPTACIÓN:
+   - Las contraseñas se guardan encriptadas (bcrypt)
+   - Nunca en texto plano
+
+4. TOKENS CON EXPIRACIÓN:
+   - El JWT expira en 1 hora
+   - Después debe volver a hacer login
+
+═══════════════════════════════════════════════════════════════════════════════
+                            RESUMEN VISUAL DEL FLUJO
+═══════════════════════════════════════════════════════════════════════════════
+
+REGISTRO:
+┌─────────────┐         ┌──────────────────────────┐         ┌──────────────┐
+│   Frontend  │         │       Backend            │         │   MongoDB    │
+│ Register.jsx│─────→   │ /auth/register           │────→    │ Collection:  │
+│             │ (POST)  │ - Validar                │ (save)  │ users        │
+│             │         │ - Hashear contraseña     │ ────→   │              │
+│             │ ←─────  │ - Guardar en BD          │         │              │
+└─────────────┘ (201)   └──────────────────────────┘         └──────────────┘
+
+LOGIN:
+┌─────────────┐         ┌──────────────────────────┐         ┌──────────────┐
+│   Frontend  │         │       Backend            │         │   MongoDB    │
+│ Login.jsx   │─────→   │ /auth/login              │────→    │ Collection:  │
+│             │ (POST)  │ - Buscar usuario         │ (find)  │ users        │
+│             │         │ - Verificar contraseña   │         │              │
+│             │ ←─────  │ - Generar JWT            │         │              │
+│             │ (token) │ - Responder JWT + user   │         │              │
+│             │         │                          │         │              │
+│localStorage │ ←─────  │                          │         │              │
+│ almacena    │ (token) │                          │         │              │
+│   token     │         │                          │         │              │
+└─────────────┘         └──────────────────────────┘         └──────────────┘
+
+OBTENER NOTAS:
+┌─────────────┐         ┌──────────────────────────┐         ┌──────────────┐
+│   Frontend  │         │       Backend            │         │   MongoDB    │
+│ Notes.jsx   │─────→   │ /notes (GET)             │────→    │ Collection:  │
+│             │ + token │ - Verificar JWT          │ (find)  │ notas        │
+│             │ (header)│ - Obtener id del usuario │ ────→   │              │
+│             │         │ - Buscar notas por user  │         │              │
+│             │ ←─────  │ - Responder notas        │         │              │
+│             │ (array) │                          │         │              │
+└─────────────┘         └──────────────────────────┘         └──────────────┘
+
+CREAR NOTA:
+┌─────────────┐         ┌──────────────────────────┐         ┌──────────────┐
+│   Frontend  │         │       Backend            │         │   MongoDB    │
+│NoteForm.jsx │─────→   │ /notes (POST)            │────→    │ Collection:  │
+│             │ + token │ - Verificar JWT          │ (save)  │ notas        │
+│             │ (header)│ - Crear nota con id user │ ────→   │              │
+│             │ (datos) │ - Guardar en BD          │         │              │
+│             │ ←─────  │ - Responder nota creada  │         │              │
+│             │ (nota)  │                          │         │              │
+└─────────────┘         └──────────────────────────┘         └──────────────┘
+
+EDITAR NOTA:
+┌─────────────┐         ┌──────────────────────────┐         ┌──────────────┐
+│   Frontend  │         │       Backend            │         │   MongoDB    │
+│NoteForm.jsx │─────→   │ /notes/:id (PUT)         │────→    │ Collection:  │
+│             │ + token │ - Verificar JWT          │ (find)  │ notas        │
+│             │ (header)│ - Buscar nota            │ ────→   │              │
+│             │ (datos) │ - Verificar es el dueño  │ (update)│              │
+│             │         │ - Actualizar en BD       │ ────→   │              │
+│             │ ←─────  │ - Responder nota update  │         │              │
+│             │ (nota)  │                          │         │              │
+└─────────────┘         └──────────────────────────┘         └──────────────┘
+
+ELIMINAR NOTA:
+┌─────────────┐         ┌──────────────────────────┐         ┌──────────────┐
+│   Frontend  │         │       Backend            │         │   MongoDB    │
+│ Notes.jsx   │─────→   │ /notes/:id (DELETE)      │────→    │ Collection:  │
+│             │ + token │ - Verificar JWT          │ (find)  │ notas        │
+│             │ (header)│ - Buscar nota            │ ────→   │              │
+│             │ (id)    │ - Verificar es el dueño  │ (delete)│              │
+│             │         │ - Eliminar de BD         │ ────→   │              │
+│             │ ←─────  │ - Responder confirmación │         │              │
+│             │ (ok)    │                          │         │              │
+└─────────────┘         └──────────────────────────┘         └──────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+                         CONCEPTOS CLAVE A RECORDAR
+═══════════════════════════════════════════════════════════════════════════════
+
+1. VALIDACIÓN EN 2 NÍVELES:
+   - Frontend: Validar para mejorar UX
+   - Backend: Validar para SEGURIDAD (frontend se puede saltear)
+
+2. TODO SE GUARDA EN MONGODB CON REFERENCIAS:
+   - Las notas guardan el ID del usuario que las creó
+   - Esto permite filtrar notas por usuario
+
+3. JWT COMO PASAPORTE:
+   - El user recibe un JWT después del login
+   - Es como un pasaporte que demuestra que está autenticado
+   - Lo envía con cada petición en el header Authorization
+
+4. MIDDLEWARE PARA PROTEGER RUTAS:
+   - verifyToken es un middleware que valida el JWT
+   - Si el token es inválido → Acceso denegado
+
+5. SOLO EL DUEÑO PUEDE MODIFICAR SUS NOTAS:
+   - Comparamos req.user.id con note.usuario
+   - Si no coinciden → Error 403 "No autorizado"
+
+6. DATOS SENSIBLES ENCRIPTADOS:
+   - Las contraseñas se han con bcrypt
+   - Nunca se guardan en texto plano
+   - Ni siquiera el backend puede leerlas, solo verificarlas
+
+7. INTERCEPTORES AUTOMATIZAN TAREAS:
+   - Request interceptor: Agrega token automáticamente
+   - Response interceptor: Maneja token expirado
+   - Sin estos, tendrías que hacerlo manualmente
+
+═══════════════════════════════════════════════════════════════════════════════
+FIN 
+═══════════════════════════════════════════════════════════════════════════════

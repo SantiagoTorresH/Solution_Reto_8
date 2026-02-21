@@ -6,7 +6,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "clave_por_defecto";
 const verifyToken = (req, res, next) => {
     // 1. Obtener el token del encabezado 'Authorization'
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Separar "Bearer TOKEN"
+    const token = authHeader && authHeader.split(' ')[1]; // Separar "Bearer TOKEN" // extrae el token
+
 
     if (!token) {
         return res.status(401).json({ message: "Acceso denegado. No hay token." });
@@ -18,7 +19,7 @@ const verifyToken = (req, res, next) => {
         
         // 3. Guardar los datos del usuario dentro de la petición (req.user)
         // para que las rutas de notas sepan de quién es la nota
-        req.user = decoded; 
+        req.user = decoded;  // <- decodifica y almacena datos del usuario
         
         next(); // Continuar a la siguiente función (la ruta)
     } catch (error) {

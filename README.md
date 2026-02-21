@@ -78,7 +78,7 @@ Las rutas protegidas requieren el header `Authorization: Bearer <token>`.
 
 **Próximos pasos sugeridos**
 
-- Opcional: configurar `docker-compose` para fácil despliegue local.
+
 
 **Autor**
 Santiago Torres Herrera 
