@@ -2,7 +2,7 @@
 
 Aplicación Full Stack para crear, editar y organizar notas con autenticación de usuarios. Proyecto desarrollado como ejercicio práctico usando Node.js/Express en el backend y React + Vite en el frontend.
 
-La app está corriendo en: <a href="https://solution-reto-8.vercel.app/login" target="_blank">https://vercel.app</a>
+La app está corriendo en: <a href="https://solution-reto-8.vercel.app/login" target="_blank">https://solution-reto-8.vercel.app/login</a>
 
 
 **Características**
